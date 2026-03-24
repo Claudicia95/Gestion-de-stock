@@ -4,3 +4,24 @@
 @plugin "daisyui" {
   themes: light --default, dark --prefersdark, abyss;
 }
+
+@keyframes wiggle {
+  0% , 100% {
+      transform: rotate(0deg);
+  }
+  50% {
+      transform: rotate(2deg);
+  }
+}
+
+.wiggle-animation{
+  animation:  wiggle 1.5s  ease-in-out infinite;
+}
+
+
+/* React toastify override */
+
+:root {
+  --toastify-color-light: #001e29;
+  --toastify-text-color-light: #ffd69c;
+}
