@@ -1,7 +1,7 @@
 "use client";
 
 import { UserButton, useUser } from "@clerk/nextjs";
-import { ListTree, Menu, PackagePlus, ShoppingBasket, Warehouse, X } from "lucide-react";
+import { HandHeart, ListTree, Menu, PackagePlus, ShoppingBasket, Warehouse, X } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -19,6 +19,7 @@ const Navbar = () => {
     { href: "/products", label: "Produits", icon: ShoppingBasket },
     { href: "/new-produit", label: "Nouveau produit", icon: PackagePlus },
     { href: "/category", label: "Catégories", icon: ListTree },
+    { href: "/give", label: "Donner", icon: HandHeart },
   ];
   useEffect(() => {
     if (user?.primaryEmailAddress?.emailAddress && user.fullName) {

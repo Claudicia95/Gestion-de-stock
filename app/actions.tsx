@@ -3,7 +3,7 @@
 
 import { Category} from "@prisma/client";
 import prisma from "./lib/prisma";
-import { FormDataType, Product } from "./type";
+import { FormDataType, OrderItem, Product } from "./type";
 
 export async function checkAndAdddAssociation(email: string, name: string) {
   if (!email) return;
@@ -328,5 +328,67 @@ export async function replenishStockWithTransaction(productId: string, quantity:
 
     } catch (error) {
         console.error(error)
+    }
+}
+
+export async function deductStockWithTransaction(orderItems: OrderItem[], email: string) {
+    try {
+
+        if (!email) {
+            throw new Error("l'email est requis .")
+        }
+
+        const association = await getAssociation(email)
+        if (!association) {
+            throw new Error("Aucune association trouvée avec cet email.");
+        }
+
+        for (const item of orderItems) {
+            const product = await prisma.product.findUnique({
+                where: { id: item.productId }
+            })
+
+            if (!product) {
+                throw new Error(`Produit avec l'ID ${item.productId} introuvable.`)
+            }
+
+            if (item.quantity <= 0) {
+                throw new Error(`La quantité demandée pour "${product.name}" doit être supérieure à zéro.`)
+            }
+
+            if (product.quantity < item.quantity) {
+                throw new Error(`Le produit "${product.name}" n'a pas assez de stock. Demandé: ${item.quantity}, Disponible: ${product.quantity} / ${product.unit}.`)
+            }
+        }
+
+        await prisma.$transaction(async (tx) => {
+            for (const item of orderItems) {
+                await tx.product.update({
+                    where: {
+                        id: item.productId,
+                        associationId: association.id
+                    },
+                    data: {
+                        quantity: {
+                            decrement: item.quantity,
+                        }
+                    }
+                });
+                await tx.transaction.create({
+                    data: {
+                        type: "OUT",
+                        quantity: item.quantity,
+                        productId: item.productId,
+                        associationId: association.id
+                    }
+                })
+            }
+
+        })
+
+        return { success: true }
+    } catch (error) {
+        console.error(error)
+        return { success: false, message: error }
     }
 }
