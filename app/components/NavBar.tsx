@@ -1,7 +1,7 @@
 "use client";
 
 import { UserButton, useUser } from '@clerk/nextjs'
-import { ListTree, Menu, ShoppingBasket, X} from 'lucide-react'
+import { ListTree, Menu, PackagePlus, ShoppingBasket, X} from 'lucide-react'
 import Image from 'next/image'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
@@ -15,7 +15,8 @@ const Navbar = () => {
     const [menuOpen, setMenuOpen] = useState(false)
 
     const navLinks = [
-        { href: "/new-produit", label: "Nouveau produit", icon: ShoppingBasket },
+        { href: "/products", label: "Produits", icon: ShoppingBasket },
+        { href: "/new-produit", label: "Nouveau produit", icon: PackagePlus },
         { href: "/category", label: "Catégories", icon: ListTree },
     ]
     useEffect(() =>{

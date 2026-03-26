@@ -1,9 +1,9 @@
 // app/actions.tsx
 "use server";
 
-import { Category, Product } from "@prisma/client";
+import { Category} from "@prisma/client";
 import prisma from "./lib/prisma";
-import { FormDataType } from "./type";
+import { FormDataType, Product } from "./type";
 
 export async function checkAndAdddAssociation(email: string, name: string) {
   if (!email) return;
@@ -256,3 +256,35 @@ export async function readProducts(email: string): Promise<Product[] | undefined
     }
 }
 
+export async function readProductById(productId: string, email: string): Promise<Product | undefined> {
+    try {
+        if (!email) {
+            throw new Error("l'email est requis .")
+        }
+
+        const association = await getAssociation(email)
+        if (!association) {
+            throw new Error("Aucune association trouvée avec cet email.");
+        }
+
+        const product = await prisma.product.findUnique({
+            where: {
+                id: productId,
+                associationId: association.id
+            },
+            include: {
+                category: true
+            }
+        })
+        if (!product) {
+            return undefined
+        }
+
+        return {
+            ...product,
+            categoryName: product.category?.name
+        }
+    } catch (error) {
+        console.error(error)
+    }
+}
