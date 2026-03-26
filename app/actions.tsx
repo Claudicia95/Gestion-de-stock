@@ -288,3 +288,45 @@ export async function readProductById(productId: string, email: string): Promise
         console.error(error)
     }
 }
+
+export async function replenishStockWithTransaction(productId: string, quantity: number, email: string) {
+    try {
+
+        if (quantity <= 0) {
+            throw new Error("La quantité à ajouter doit être supérieure à zéro.")
+        }
+
+        if (!email) {
+            throw new Error("l'email est requis .")
+        }
+
+        const association = await getAssociation(email)
+        if (!association) {
+            throw new Error("Aucune association trouvée avec cet email.");
+        }
+
+        await prisma.product.update({
+            where: {
+                id: productId,
+                associationId: association.id
+            },
+            data: {
+                quantity: {
+                    increment: quantity
+                }
+            }
+        })
+
+        await prisma.transaction.create({
+            data: {
+                type: "IN",
+                quantity: quantity,
+                productId: productId,
+                associationId: association.id
+            }
+        })
+
+    } catch (error) {
+        console.error(error)
+    }
+}
