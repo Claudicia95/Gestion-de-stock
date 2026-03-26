@@ -15,3 +15,12 @@ export interface FormDataType {
     categoryName?: string;
     imageUrl?: string;
 }
+
+export interface OrderItem {
+    productId: string;
+    quantity: number;
+    unit: string;
+    imageUrl: string;
+    name: string;
+    availableQuantity: number;
+};
