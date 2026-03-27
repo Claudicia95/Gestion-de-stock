@@ -1,7 +1,7 @@
 "use client";
 
 import { UserButton, useUser } from "@clerk/nextjs";
-import { HandHeart, ListTree, Menu, PackagePlus, ShoppingBasket, Warehouse, X } from "lucide-react";
+import { HandHeart, LayoutDashboard, ListTree, Menu, PackagePlus, Receipt, ShoppingBasket, Warehouse, X } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -16,10 +16,12 @@ const Navbar = () => {
   const [menuOpen, setMenuOpen] = useState(false);
 
   const navLinks = [
+    { href: "/", label: "Tableau de Bord", icon: LayoutDashboard },
     { href: "/products", label: "Produits", icon: ShoppingBasket },
     { href: "/new-produit", label: "Nouveau produit", icon: PackagePlus },
     { href: "/category", label: "Catégories", icon: ListTree },
     { href: "/give", label: "Donner", icon: HandHeart },
+    { href: "/transactions", label: "Transaction", icon: Receipt },
   ];
   useEffect(() => {
     if (user?.primaryEmailAddress?.emailAddress && user.fullName) {

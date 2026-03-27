@@ -10,11 +10,13 @@
   },
   "dependencies": {
     "@clerk/nextjs": "^7.0.6",
+    "eslint-plugin-react-hooks": "^7.1.0-canary-3cb2c420-20260324",
     "lucide-react": "^0.577.0",
     "next": "16.2.0",
     "react": "19.2.4",
     "react-dom": "19.2.4",
     "react-toastify": "^11.0.5",
+    "recharts": "^3.8.1",
     "swr": "^2.4.1"
   },
   "devDependencies": {

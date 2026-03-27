@@ -3,7 +3,7 @@
 
 import { Category} from "@prisma/client";
 import prisma from "./lib/prisma";
-import { FormDataType, OrderItem, Product } from "./type";
+import { FormDataType, OrderItem, Product, ProductOverviewStats, StockSummary, Transaction } from "./type";
 
 export async function checkAndAdddAssociation(email: string, name: string) {
   if (!email) return;
@@ -392,3 +392,193 @@ export async function deductStockWithTransaction(orderItems: OrderItem[], email:
         return { success: false, message: error }
     }
 }
+
+export async function getTransactions(email: string, limit?: number): Promise<Transaction[]> {
+    try {
+        if (!email) {
+            throw new Error("l'email est requis .")
+        }
+
+        const association = await getAssociation(email)
+        if (!association) {
+            throw new Error("Aucune association trouvée avec cet email.");
+        }
+
+        const transactions = await prisma.transaction.findMany({
+            where: {
+                associationId: association.id
+            },
+            orderBy: {
+                createdAt: "desc"
+            },
+            take: limit,
+            include: {
+                product: {
+                    include: {
+                        category: true
+                    }
+                }
+            }
+        })
+
+        return transactions.map((tx) => ({
+            ...tx,
+            categoryName: tx.product.category.name,
+            productName: tx.product.name,
+            imageUrl: tx.product.imageUrl,
+            price: tx.product.price,
+            unit: tx.product.unit,
+        }))
+    } catch (error) {
+        console.error(error)
+        return []
+    }
+}
+
+export async function getProductOverviewStats(email: string): Promise<ProductOverviewStats> {
+    try {
+        if (!email) {
+            throw new Error("l'email est requis .")
+        }
+
+        const association = await getAssociation(email)
+        if (!association) {
+            throw new Error("Aucune association trouvée avec cet email.");
+        }
+
+        const products = await prisma.product.findMany({
+            where: {
+                associationId: association.id
+            },
+            orderBy: {
+                createdAt: "desc"
+            },
+            include: {
+                category: true
+            }
+        })
+
+        const transactions = await prisma.transaction.findMany(
+            {
+                where: {
+                    associationId: association.id
+                },
+            }
+        )
+
+        const categoriesSet = new Set(products.map((product) => product.category.name))
+
+        const totalProducts = products.length
+        const totalCategories = categoriesSet.size
+        const totalTransactions = transactions.length
+        const stockValue = products.reduce((acc, product) => {
+            return acc + product.price * product.quantity
+        }, 0)
+
+        return {
+            totalProducts,
+            totalCategories,
+            totalTransactions,
+            stockValue,
+        }
+    } catch (error) {
+        console.error(error)
+
+        return {
+            totalProducts: 0,
+            totalCategories: 0,
+            totalTransactions: 0,
+            stockValue: 0,
+        }
+    }
+}
+
+export async function getProductCategoryDistribution(email: string) {
+    try {
+        if (!email) {
+            throw new Error("l'email est requis .")
+        }
+
+        const association = await getAssociation(email)
+        if (!association) {
+            throw new Error("Aucune association trouvée avec cet email.");
+        }
+
+        const R = 5
+
+        const categoriesWithProductCount = await prisma.category.findMany({
+            where: {
+                associationId: association.id
+            },
+            include: {
+                products: {
+                    select: {
+                        id: true
+                    }
+                }
+            }
+        })
+
+        const data = categoriesWithProductCount
+            .map((category) => (
+                {
+                    name: category.name,
+                    value: category.products.length
+                }
+            ))
+            .sort((a, b) => b.value - a.value)
+            .slice(0, R)
+
+        return data
+
+    } catch (error) {
+        console.error(error)
+    }
+}
+
+ export async function getStockSummary(email: string): Promise<StockSummary> {
+    try {
+        if (!email) {
+            throw new Error("l'email est requis .")
+        }
+
+        const association = await getAssociation(email)
+        if (!association) {
+            throw new Error("Aucune association trouvée avec cet email.");
+        }
+
+
+        const allProducts = await prisma.product.findMany({
+            where: {
+                associationId: association.id
+            },
+            include: {
+                category: true
+            }
+        })
+
+        const inStock = allProducts.filter((p) => p.quantity > 5)
+        const lowStock = allProducts.filter((p) => p.quantity > 0 && p.quantity <= 0)
+        const outOfStock = allProducts.filter((p) => p.quantity === 0)
+        const criticalProducts = [...lowStock, ...outOfStock]
+        return {
+            inStockCount: inStock.length,
+            lowStockCount: lowStock.length,
+            outOfStockCount: outOfStock.length,
+            criticalProducts: criticalProducts.map((p) => ({
+                ...p,
+                categoryName: p.category.name
+            }))
+        }
+
+    } catch (error) {
+        console.error(error)
+
+        return {
+            inStockCount: 0,
+            lowStockCount: 0,
+            outOfStockCount: 0,
+            criticalProducts: []
+        }
+    }
+} 

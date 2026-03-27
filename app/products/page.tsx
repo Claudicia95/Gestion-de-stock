@@ -17,28 +17,40 @@ const Page = () => {
 
   const [products, setProducts] = useState<Product[]>([]);
 
-  const fetchProducts = async () => {
-    try {
-      if (email) {
-        const products = await readProducts(email);
-        if (products) {
-          setProducts(products);
+  // Correction : Déplacer fetchProducts à l'intérieur de l'effet
+  useEffect(() => {
+    let isMounted = true;
+    
+    const fetchProducts = async () => {
+      try {
+        if (email) {
+          const products = await readProducts(email);
+          if (products && isMounted) {
+            setProducts(products);
+          }
+        }
+      } catch (error) {
+        if (isMounted) {
+          console.error(error);
         }
       }
-    } catch (error) {
-      console.error(error);
-    }
-  };
+    };
 
-  useEffect(() => {
-    if (email) fetchProducts();
-  }, [email]);
+    if (email) {
+      fetchProducts();
+    }
+    
+    return () => {
+      isMounted = false;
+    };
+  }, [email]); // Seulement email comme dépendance
 
   const handleDeleteProduct = async (product: Product) => {
     const confirmDelete = confirm(
       "Voulez-vous vraiment supprimer ce produit ?",
     );
     if (!confirmDelete) return;
+    
     try {
       if (product.imageUrl) {
         const resDelete = await fetch("/api/upload", {
@@ -46,19 +58,25 @@ const Page = () => {
           body: JSON.stringify({ path: product.imageUrl }),
           headers: { "content-Type": "application/json" },
         });
-        const dataDetele = await resDelete.json();
-        if (!dataDetele.success) {
-          throw new Error("Erreur lors de la supresson de l'image.");
+        const dataDelete = await resDelete.json();
+        
+        if (!dataDelete.success) {
+          throw new Error("Erreur lors de la suppression de l'image.");
         } else {
           if (email) {
             await deleteProduct(product.id, email);
-            await fetchProducts();
-            toast.success("Produit suppremier avec succès.");
+            // Rafraîchir les produits après suppression
+            const updatedProducts = await readProducts(email);
+            if (updatedProducts) {
+              setProducts(updatedProducts);
+            }
+            toast.success("Produit supprimé avec succès.");
           }
         }
       }
     } catch (error) {
       console.error(error);
+      toast.error("Erreur lors de la suppression du produit.");
     }
   };
 
